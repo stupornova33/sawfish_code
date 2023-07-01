@@ -1,1 +1,74 @@
-###################################### ########### separate paralogs into different files ##################################################################### gets species sequence ids for annotated genes # reads from list of all annotated geneswhile read line; do grep -i -w $line ALL_annot >> $line.tmp; done < allGeneList ################################################################ getNucFasta.sh ################################################################################ headers have been printed to files for each gene group from eggNOG annotation files# get the fasta sequence for headers in each filefor file in *.headersdo 		awk 'BEGIN{RS = ">"} FNR== NR {a[$1]=$2; next}{if($1 in a){print ">"a[$1],$1 "\n" $2}}' $file renamed_prot >> $file.fa	#sed -i 1,2d $file.fa	#sed -i 's/> />/' $file.fadone# print lengths of each fasta sequence to a tmp file# for each species find the sequences that are greater than 100 amino acids in length from the average of the gene# exclude those sequences from analysiswhile read linedo 	bioawk -c fastx '{print length($seq), $name}' nsc_processing/fastas/"$line".fasta > "$line"_length.tmpdone < ../uniq2Saw.txtfor f in *_length.tmpdo 	ave=$( awk '{ sum += $1 } END { if (NR > 0) print sum / NR }' $f )	awk -v var=$ave '{print $1 - var, $2}' $f >> "$f".sumsdonesed -i 's/sawfish/sawfish /' *.sumsfor f in *.sums	do #awk '{if($1 > -300 && $1 < 300 && $2 == "sawfish") print FILENAME}' $f | sort -u >> sawfishNotFubar	do awk '{if($1 < -300 && $2 == "sawfish") print FILENAME, $2 $3}' $f | sort -u >> sawfishFubardone################################################################ filterGroups.sh ################################################################################ exclude gene groups where there is not a representative sequence for each speciesfor f in *.fastado	con1=$( grep -i -c sawfish $f)	con2=$( grep -i -c catshark $f)	con3=$( grep -i -c coelacanth $f)	con4=$( grep -i -c elephantshark $f)	con5=$( grep -i -c skate $f)if [[ $con1 -ge 1 ]]then  if [[ $con2 -ge 1 ]]  then  if [[ $con3 -ge 1 ]]   then   if [[ $con4 -ge 1 ]]    then    if [[ $con5 -ge 1 ]]     then 	echo "$f" >> goodGroups.txt    fi   fi  fi fifidone
+###################################### ########### separate paralogs into different files ####################################################################
+# gets species sequence ids for annotated genes 
+# reads from list of all annotated genes
+
+while read line; do grep -i -w $line ALL_annot >> $line.tmp; done < allGeneList 
+
+
+################################################################ getNucFasta.sh ##############################################################################
+## headers have been printed to files for each gene group from eggNOG annotation files
+# get the fasta sequence for headers in each file
+
+for file in *.headers
+do 	
+	awk 'BEGIN{RS = ">"} FNR== NR {a[$1]=$2; next}{if($1 in a){print ">"a[$1],$1 "\n" $2}}' $file renamed_prot >> $file.fa
+	#sed -i 1,2d $file.fa
+	#sed -i 's/> />/' $file.fa
+done
+
+
+
+# print lengths of each fasta sequence to a tmp file
+# for each species find the sequences that are greater than 100 amino acids in length from the average of the gene
+# exclude those sequences from analysis
+
+while read line
+do 
+	bioawk -c fastx '{print length($seq), $name}' nsc_processing/fastas/"$line".fasta > "$line"_length.tmp
+done < ../uniq2Saw.txt
+
+
+for f in *_length.tmp
+do 
+	ave=$( awk '{ sum += $1 } END { if (NR > 0) print sum / NR }' $f )
+	awk -v var=$ave '{print $1 - var, $2}' $f >> "$f".sums
+done
+
+sed -i 's/sawfish/sawfish /' *.sums
+
+for f in *.sums
+	do #awk '{if($1 > -300 && $1 < 300 && $2 == "sawfish") print FILENAME}' $f | sort -u >> sawfishNotFubar
+	do awk '{if($1 < -300 && $2 == "sawfish") print FILENAME, $2 $3}' $f | sort -u >> sawfishFubar
+done
+
+
+
+
+################################################################ filterGroups.sh ##############################################################################
+## exclude gene groups where there is not a representative sequence for each species
+
+for f in *.fasta
+do
+	con1=$( grep -i -c sawfish $f)
+	con2=$( grep -i -c catshark $f)
+	con3=$( grep -i -c coelacanth $f)
+	con4=$( grep -i -c elephantshark $f)
+	con5=$( grep -i -c skate $f)
+
+if [[ $con1 -ge 1 ]]
+then 
+ if [[ $con2 -ge 1 ]]
+  then
+  if [[ $con3 -ge 1 ]]
+   then
+   if [[ $con4 -ge 1 ]]
+    then
+    if [[ $con5 -ge 1 ]]
+     then 
+	echo "$f" >> goodGroups.txt
+    fi
+   fi
+  fi
+ fi
+fi
+done
