@@ -1,0 +1,33 @@
+Bowtie2 v.2.4.4
+bowtie2-build --threads 10 -f female_pristis_assembly.fasta Ppec
+bowtie2 -q -x Ppec -1 L_tiss -2 R_tissue -S
+ 
+STAR Mapper v2.7.7a
+STAR --runThreadN 10 --runMode genomeGenerate --genomeDir ./ --genomeFastaFiles female_pristis_assembly.fasta
+
+STAR --runThreadN 10 --readFilesIn allLeftRNA.fq allRightRNA.fq --genomeDir ./ --outFileNamePrefix starRNA2gen
+
+hisat2 v2.2.1
+../hisat2src/hisat2-build Transcriptome/sawfishTrans.fasta transcriptome
+
+hisat2 --dta-cufflinks -q -x GenomeIndex/genome -1 allLeftRNA.fq -2 allRightRNA.fq -S RNA2genome.bam
+
+cufflinks v2.2.1
+cufflinks-2.2.1.Linux_x86_64/cufflinks sort_map2Transcriptome.bam
+
+eggNOG annotation
+./emapper.py  -i $gene.fa --output $gene.annot -m diamond --cpu 10
+
+Mafft Alignment v7.520
+~/mafft-linux64/mafft.bat --auto --inputorder $gene.fa > $gene.fa.aln
+
+pal2nal v14
+pal2nal.pl $gene.fa.aln $gene.fasta -output fasta -nogap > $gene.p2n
+
+
+Fasttree v2.1.11
+fasttree $gene.fa.aln > $gene.tree
+
+
+Hyphy v2.5.33
+hyphy absrel $gene.p2n --tree $gene.tree > $gene.out
